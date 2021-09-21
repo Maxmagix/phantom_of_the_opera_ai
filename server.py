@@ -20,11 +20,7 @@ def init_connexion():
         clients.append(clientsocket)
         clientsocket.settimeout(10)
 
-
-if __name__ == '__main__':
-    players = [Player(0), Player(1)]
-    scores = []
-
+def startServer():
     logger.info("no client yet")
     init_connexion()
     logger.info("received all clients")
@@ -33,9 +29,9 @@ if __name__ == '__main__':
     pr = cProfile.Profile()
     pr.enable()
 
-    game = Game(players)
-    game.lancer()
+    return pr
 
+def endServer(pr):
     link.close()
 
     # profiling
@@ -46,3 +42,13 @@ if __name__ == '__main__':
     pr.print_stats(sort='time')
 
     sys.stdout = sys.__stdout__
+
+def play():
+    players = [Player(0), Player(1)]
+    game = Game(players)
+    return game.lancer()
+
+if __name__ == '__main__':
+    pr = startServer()
+    play()
+    endServer(pr)

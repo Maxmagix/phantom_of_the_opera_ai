@@ -64,6 +64,7 @@ file_handler.setLevel(logging.DEBUG)
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 # logger to console
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.DEBUG)
-logger.addHandler(stream_handler)
+if os.environ.get("DONT_LOG_STDOUT") is None:
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.DEBUG)
+    logger.addHandler(stream_handler)
