@@ -1,32 +1,29 @@
-class Parrallal_Game:
-    final_score = 16
-    remaining_suspects = 8
-    screaming_people = 0
+def parse_game_state(text_state):
+    game_state = {
+        "position_carlotta": text_state.position_carlotta,
+        "exit": text_state.exit,
+        "num_tour": text_state.num_tour,
+        "shadow": text_state.shadow,
+        "blocked": text_state.blocked,
+        "characters": text_state.characters_display,
+        # Todo: should be removed
+        "character_cards": text_state.character_cards_display,
+        "active character_cards": text_state.active_cards_display,
+    }
 
-    ghost_color = 'blue'
-    num_tour = 0
-    action_tour = 0
-    shadow = 0
-    blocked = [0, 1]
-    characters = []
-    remaining_powers = []
-    responses_index = []
-
-    def __init__(self, game_state):
-        self.final_score = int(game_state['exit']) - int(game_state['position_carlotta'])
-        self.num_tour = int(game_state['num_tour'])
-        self.shadow = int(game_state['shadow'])
-        self.blocked = game_state['blocked']
-        self.characters = game_state['characters']
-        for card in game_state['active character_cards']:
-            self.remaining_powers.append(card['color'])
+    return game_state
 
 def get_new_possibilities(action, game_state, turns_left):
     # action affect game state
     # if turn end we end turn (turns_left.pop(0)) otherwise we stay on same person's turn
     #  return possible actions
     
-    new_game_state = Parrallal_Game(game_state)
+    # select 
+    # activate power for purple and brown
+    # move
+    # activate power
+
+    new_game_state = (game_state)
     
     return []
 
