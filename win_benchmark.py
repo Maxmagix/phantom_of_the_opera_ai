@@ -12,6 +12,27 @@ os.environ["DONT_LOG_STDOUT"] = "NO"
 
 from server import startServer, endServer, play
 
+class LoadingBar():
+	def __init__(self, nbUpdates, displaySize=30):
+		self.nbUpdates = nbUpdates
+		self.displaySize = displaySize
+
+		if nbUpdates == displaySize:
+			self.bar = ["="] * displaySize
+		elif nbUpdates < displaySize:
+			self.bar = ["=" * (displaySize // nbUpdates)] * nbUpdates
+			for i in range(0, displaySize % nbUpdates):
+				self.bar[i * displaySize % nbUpdates] += "="
+		else:
+			self.bar = [""] * nbUpdates
+			for i in range(0, displaySize):
+				self.bar[i * (nbUpdates // displaySize)] = "="
+
+	def increment(self):
+		if len(self.bar) != 0:
+			return self.bar.pop()
+
+
 class SubprocessThread(threading.Thread):
 	def __init__(self, command):
 		threading.Thread.__init__(self)
@@ -21,55 +42,44 @@ class SubprocessThread(threading.Thread):
 
 
 class ServerThread(threading.Thread):
-	def __init__(self, resQueue, nbGames):
+	def __init__(self, resQueue):
 		threading.Thread.__init__(self)
 		self.resQueue = resQueue
-		self.nbGames = nbGames
 
 	def run(self):
-		print("Starting server", file=sys.stderr)
 		pr = startServer()
-		print("Clients connected", file=sys.stderr)
 
-		# scores = []
-		scores = []
-
-		print("Running tests", file=sys.stderr)
-		sizeLoadingBar = 30
-		loading = 0
-		for i in range(self.nbGames):
-			if self.nbGames <= sizeLoadingBar:
-				print("=" * (sizeLoadingBar // self.nbGames), file=sys.stderr, end='')
-				sys.stderr.flush()
-				loading += 1
-			elif self.nbGames > sizeLoadingBar and i / (self.nbGames / sizeLoadingBar) > loading:
-				print("=", file=sys.stderr, end='')
-				sys.stderr.flush()
-				loading += 1
-
-			scores.append(play())
-		print(file=sys.stderr)
-
+		self.resQueue.put(play())
 		endServer(pr)
-		self.resQueue.put(scores)
 
 
 def runWinBench(comFan, comInsp, nbGames):
 	q = Queue()
+	scores = []
 
-	serverThread = ServerThread(q, nbGames)
-	fantomThread = SubprocessThread(comFan)
-	inspThread = SubprocessThread(comInsp)
+	bar = LoadingBar(nbGames)
 
-	serverThread.start()
+	for i in range(nbGames):
+		serverThread = ServerThread(q)
+		inspThread = SubprocessThread(comInsp)
+		fantomThread = SubprocessThread(comFan)
 
-	time.sleep(1)
+		serverThread.start()
 
-	fantomThread.start()
-	inspThread.start()
+		time.sleep(0.5) # Leaves time for the server to start up
 
-	serverThread.join()
-	return q.get()
+		inspThread.start()
+		time.sleep(0.2) # Inspector must connect first
+		fantomThread.start()
+
+		serverThread.join()
+		scores.append(q.get())
+		print(bar.increment(), end="", file=sys.stderr)
+		sys.stderr.flush()
+
+	print()
+	return scores
+
 
 def printWinStats(scores):
 	nbGames = len(scores)
@@ -80,6 +90,7 @@ def printWinStats(scores):
 	print("fantom win rate: {:.2f}%".format(fantomWins / nbGames * 100))
 	print("inspector win rate: {:.2f}%".format(inspWins / nbGames * 100))
 
+
 def main(argv):
 	comFan = argv[0]
 	comInsp = argv[1]
@@ -88,6 +99,7 @@ def main(argv):
 	scores = runWinBench(comFan, comInsp, nbGames)
 	printWinStats(scores)
 	os._exit(0) # This is dirty, the subprocesses don't seem exit so we forcefully exit
+
 
 if __name__ == '__main__':
 	if len(sys.argv[1:]) == 3:
