@@ -4,6 +4,7 @@ import os
 import random
 import socket
 from logging.handlers import RotatingFileHandler
+import Character
 
 import protocol
 
@@ -30,9 +31,20 @@ stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.WARNING)
 fantom_logger.addHandler(stream_handler)
 
+turn_order = [["phantom", "phantom", "inspector"], ["phantom", "inspector", "inspector", "phantom"]]
+
+actual_game_state = {}
+
+#def use_power(color):
+
+#def get_all_moves_character(color, map):
+
+#def choose_power_card(possible_cards):
+
+def get_game_state(game_state):
+    actual_game_state = game_state
 
 class Player():
-
     def __init__(self):
 
         self.end = False
