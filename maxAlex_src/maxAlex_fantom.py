@@ -61,6 +61,7 @@ class Player():
         # work
         data = question["data"]
         game_state = question["game state"]
+        print(game_state)
         response_index = random.randint(0, len(data)-1)
         # log
         fantom_logger.debug("|\n|")

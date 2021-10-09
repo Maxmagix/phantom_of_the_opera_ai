@@ -117,6 +117,9 @@ class Game:
             "active character_cards": self.active_cards_display,
         }
 
+    def set_game_state(self, game_state):
+        print(game_state)
+
     def actions(self):
         """
         phase = tour
