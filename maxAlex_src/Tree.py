@@ -30,25 +30,57 @@ def get_new_possibilities(action, game_state, turns_left):
     
     return []
 
+class SkyRoot:
+  alpha: 10000
+  beta = -10000
+
 class Tree:
     """
         Class representing the possibility tree and adding Alplha Beta to optimise it
     """
-    alpha: float
-    beta: float
+    score: float
+    maxScore: float
+    minScore: float
     answer: str
-    possibilities = []
+    branches = []
     mother_branch = None
 
     def __init__(self, answer, possibilities, game_state, turns_left, trunk):
         self.answer = answer
-        self.beta = -10000
         self.mother_branch = trunk
-        for possibility in possibilities:
-            new_possible_actions, new_game_state, turns_to_play = get_new_possibilities(possibility, game_state, turns_left)
-            branch = Tree(possibility, new_possible_actions, new_game_state, turns_to_play, self)
-            branch.alpha = branch.calculate_alpha(new_game_state)
-            self.possibilities.append(branch)
+        # Case if End Of Branch
+        if len(turns_left) == 0:
+          self.score = branch.calculate_score(game_state) # TODO
+        # Case if Phantom turn
+        elif turns_left[0] == "phantom" # TODO : TOCHECK
+          self.maxScore = -10000
+          for possibility in possibilities: 
+              # Calculate possibilities of the branch and create it
+              new_possible_actions, new_game_state, turns_to_play = get_new_possibilities(possibility, game_state, turns_left) # TODO
+              branch = Tree(possibility, new_possible_actions, new_game_state, turns_to_play, self)
+              self.branches.append(branch)
+              # Get best score & Alpha/Beta Pruning
+              maxScore = max(maxScore, branch.score)
+              Skyroot.alpha = max(Skyroot.alpha, branch.score)
+              if SkyRoot.beta <= SkyRoot.alpha:
+                break
+          self.score = maxScore
+        # Case if Inspector turn
+        else 
+          self.minScore = 10000
+          for possibility in possibilities: 
+              # Calculate possibilities of the branch and create it
+              new_possible_actions, new_game_state, turns_to_play = get_new_possibilities(possibility, game_state, turns_left) # TODO
+              branch = Tree(possibility, new_possible_actions, new_game_state, turns_to_play, self)
+              self.branches.append(branch)
+              # Get best score & Alpha/Beta Pruning
+              minScore = min(minScore, branch.score)
+              Skyroot.beta = min(Skyroot.beta, branch.score)
+              if SkyRoot.beta <= SkyRoot.alpha:
+                break
+          self.score = maxScore
+        
+        
     
     def calculate_alpha(game_state):
         # look at game state and outcome of action
