@@ -7,43 +7,42 @@ import random
 import socket
 from logging.handlers import RotatingFileHandler
 
-import protocol
+import alexis_src.protocol as protocol
 
-from utils import get_char_from_color
-from get_all_possible_plays import get_all_possible_plays
-from immutable_play import immutable_play
-from evaluate_game_state import predict_carlotta_move_inspector
+from alexis_src.utils import get_char_from_color
+from alexis_src.get_all_possible_plays import get_all_possible_plays
+from alexis_src.immutable_play import immutable_play
+from alexis_src.evaluate_game_state import predict_carlotta_move
 
 host = "localhost"
 port = 12000
 # HEADERSIZE = 10
 
 """
-set up inspector logging
+set up fantom logging
 """
-inspector_logger = logging.getLogger()
-inspector_logger.setLevel(logging.DEBUG)
+fantom_logger = logging.getLogger()
+fantom_logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter(
     "%(asctime)s :: %(levelname)s :: %(message)s", "%H:%M:%S")
 # file
-if os.path.exists("./logs/inspector.log"):
-    os.remove("./logs/inspector.log")
-file_handler = RotatingFileHandler('./logs/inspector.log', 'a', 1000000, 1)
+if os.path.exists("./logs/fantom.log"):
+    os.remove("./logs/fantom.log")
+file_handler = RotatingFileHandler('./logs/fantom.log', 'a', 1000000, 1)
 file_handler.setLevel(logging.DEBUG)
 file_handler.setFormatter(formatter)
-inspector_logger.addHandler(file_handler)
+fantom_logger.addHandler(file_handler)
 # stream
 stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.WARNING)
-inspector_logger.addHandler(stream_handler)
+fantom_logger.addHandler(stream_handler)
 
 
 class Player():
 
     def __init__(self):
-
+        self.firstTurn = True
         self.end = False
-        # self.old_question = ""
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.response_stack = []
@@ -58,17 +57,16 @@ class Player():
         if self.response_stack == []:
             plays = get_all_possible_plays(question)
 
+            fantom_position = get_char_from_color(question["game state"], question["game state"]["fantom"])["position"]
             best_play = None
-            min_carlotta_move = None
+            max_carlotta_move = None
             for play in plays:
                 new_game_state = immutable_play(question["game state"], play)
-                # new_min_carlotta_move = predict_carlotta_move_inspector(new_game_state)
-                (scream, no_scream) = predict_carlotta_move_inspector(new_game_state)
-                new_min_carlotta_move = abs(scream - no_scream)
+                new_max_carlotta_move = predict_carlotta_move(new_game_state, fantom_position)
 
-                if best_play == None or new_min_carlotta_move < min_carlotta_move:
+                if best_play == None or new_max_carlotta_move > max_carlotta_move:
                     best_play = play
-                    min_carlotta_move = new_min_carlotta_move
+                    max_carlotta_move = new_max_carlotta_move
 
             self.response_stack = best_play
         if question["question type"] == "select character":
