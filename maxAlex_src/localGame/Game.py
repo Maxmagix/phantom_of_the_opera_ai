@@ -136,7 +136,10 @@ class Game:
         new_game_state["num_tour"] = self.num_tour
         new_game_state["shadow"] = self.shadow
         new_game_state["blocked"] = self.blocked
-        new_game_state["characters"] = self.characters
+        characters = []
+        for charact in self.characters:
+            characters.append(charact.display())
+        new_game_state["characters"] = characters
         new_game_state["character_cards"] = self.character_cards
         new_game_state["active characters_cards"] = self.active_cards
         #new_game_state["fantom"] = self.fantom
