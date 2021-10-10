@@ -4,6 +4,7 @@ import subprocess
 import threading
 import time
 import os
+import random
 import sys
 from queue import Queue
 
@@ -47,8 +48,14 @@ class ServerThread(threading.Thread):
 		self.resQueue = resQueue
 
 	def run(self):
+		seed = time.time()
+		random.seed(seed)
 		pr = startServer()
-		self.resQueue.put(play())
+		try:
+			score = play()
+			self.resQueue.put(["ok", score])
+		except:
+			self.resQueue.put(["crash", seed])
 		endServer(pr)
 
 
@@ -79,7 +86,16 @@ def runWinBench(comFan, comInsp, nbGames):
 		fantomThread.start()
 
 		serverThread.join()
-		scores.append(q.get())
+
+		res = q.get()
+		if res[0] == "ok":
+			scores.append(res[1])
+		elif res[0] == "crash":
+			print("!")
+			print("An error occured while playing")
+			print(f"This is the server seed, use it to reproduce the error (won't always work): {res[1]}")
+			return scores
+
 		print(bar.increment(), end="", file=sys.stderr)
 		sys.stderr.flush()
 
@@ -92,7 +108,7 @@ def printWinStats(scores):
 	fantomWins = len(list(filter(lambda x: x <= 0, scores)))
 	inspWins = nbGames - fantomWins
 
-	print("played {} games".format(nbGames))
+	print(f"played {nbGames} games")
 	print("fantom win rate: {:.2f}%".format(fantomWins / nbGames * 100))
 	print("inspector win rate: {:.2f}%".format(inspWins / nbGames * 100))
 
@@ -103,7 +119,10 @@ def main(argv):
 	nbGames = int(argv[2])
 
 	scores = runWinBench(comFan, comInsp, nbGames)
-	printWinStats(scores)
+	if scores != []:
+		printWinStats(scores)
+	else:
+		print("No results to display")
 	os._exit(0) # This is dirty, the subprocesses don't seem exit so we forcefully exit
 
 

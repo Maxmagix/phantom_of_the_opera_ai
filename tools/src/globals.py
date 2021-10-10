@@ -19,19 +19,19 @@ clients = []
 """
 # determines whether the power of the character is used before
 # or after moving
-permanents = {"pink"}
-before = {"purple", "brown"}
-after = {"black", "white", "red", "blue", "grey"}
+permanents = ["pink"]
+before = ["purple", "brown"]
+after = ["black", "white", "red", "blue", "grey"]
 
 # reunion of sets
-colors = {"pink",
+colors = ["pink",
           "blue",
           "purple",
           "grey",
           "white",
           "black",
           "red",
-          "brown"}
+          "brown"]
 
 # ways between rooms
 # rooms are numbered

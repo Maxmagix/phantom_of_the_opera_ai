@@ -1,4 +1,5 @@
 import cProfile
+import random
 import sys
 
 from src.Game import Game
@@ -49,6 +50,8 @@ def play():
     return game.lancer()
 
 if __name__ == '__main__':
+    if len(sys.argv) == 2:
+        random.seed(float(sys.argv[1]))
     pr = startServer()
     play()
     endServer(pr)

@@ -1,4 +1,5 @@
 import json
+import random
 from random import shuffle, randrange, choice
 from typing import List, Set, Union, Tuple
 
@@ -34,7 +35,7 @@ class Game:
         self.exit = 22
         self.num_tour = 1
         # Todo: Should be a Dict[enum, Character]
-        self.characters = set({Character(color) for color in colors})
+        self.characters = [Character(color) for color in colors]
         # character_cards are used to draw 4 characters at the beginning
         # of each round
         self.character_cards = list(self.characters)
@@ -146,7 +147,7 @@ class Game:
 
     def fantom_scream(self):
         partition: List[Set[Character]] = [
-            {p for p in self.characters if p.position == i} for i in range(10)]
+            [p for p in self.characters if p.position == i] for i in range(10)]
         if len(partition[self.fantom.position]) == 1 \
                 or self.fantom.position == self.shadow:
             logger.info("The fantom screams.")
