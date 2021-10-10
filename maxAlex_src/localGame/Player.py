@@ -1,15 +1,10 @@
 import json
 from typing import Tuple
 from random import randint, choice
-from src.globals import passages, colors, pink_passages, before, after, logger, mandatory_powers
-from src.utils import ask_question_json
-
+from localgame.globals import passages, colors, pink_passages, before, after, mandatory_powers
 
 class Player:
-    """
-        Class representing the players, either the inspector (player 0)
-        or the fantom (player 1)
-    """
+
     num: int
 
     def __init__(self, n: int):
@@ -17,43 +12,17 @@ class Player:
         # Todo: Should not be a str, enum instead.
         self.role: str = "inspector" if n == 0 else "fantom"
 
-    def get_moves(self, game):
-
-    def play(self, game):
-        logger.info("--\n" + self.role + " plays\n--")
-
-        logger.debug(json.dumps(game.update_game_state(""), indent=4))
-        charact = self.select(
-            game.active_cards, game.update_game_state(self.role))
-
-        # purple and brown power choose to activate or not before moving
-        moved_character = self.activate_power(charact,
-                                              game,
-                                              before,
-                                              game.update_game_state(self.role))
-
-        self.move(charact,
-                  moved_character,
-                  game.blocked,
-                  game.update_game_state(self.role),
-                  game)
-
-        self.activate_power(charact,
-                            game,
-                            after,
-                            game.update_game_state(self.role))
-
-
-    def possible_selected_cards(active_cards):
+    def possible_selected_cards(self, active_cards):
+        
         """
             Choose the character to activate whithin
             the given choices.
         """
-        available_characters = [character.display()
-                                for character in active_cards]
+        
+        available_characters = [character.display() for character in active_cards]
         return available_characters
 
-    def select(active_cards, selected_character):
+    def select(self, active_cards, selected_character):
         """
             Choose the character to activate whithin
             the given choices.
@@ -68,6 +37,7 @@ class Player:
 
 
     def get_adjacent_positions(self, charact, game):
+        active_passages = []
         if charact.color == "pink":
             active_passages = pink_passages
         else:
@@ -76,32 +46,34 @@ class Player:
 
 
     def get_adjacent_positions_from_position(self, position, charact, game):
+        active_passages = []
         if charact.color == "pink":
             active_passages = pink_passages
         else:
             active_passages = passages
         return [room for room in active_passages[position] if set([room, position]) != set(game.blocked)]
 
-    def choose_activate_power_and_action(self, charact, game, activables, game_state):
+    def choose_activate_power(self, color, activables):
+        if color in activables:
+            # check if special power is mandatory
+            if color in mandatory_powers:
+                return [1]
+            # special power is not mandatory
+            else:
+                [0, 1]
+        else:
+            return None
+
+    def get_power_choices(self, charact, game, activables):
         """
             Use the special power of the character.
         """
 
-        possible_actions = {
-            "activate": [],
-            "choices": []
-        }
+        possible_actions = []
         # check if the power should be used before of after moving
         # this depends on the "activables" variable, which is a set.
-        if not charact.power_activated and charact.color in activables:
-            # check if special power is mandatory
-            if charact.color in mandatory_powers:
-                possible_actions["activate"].append(1)
-
-            # special power is not mandatory
-            else:
-                possible_actions["activate"].append(0)
-                possible_actions["activate"].append(1)
+        if charact.power_activated or charact.color not in activables:
+            return None
         
         # the power will be used
         # charact.power represents the fact that
@@ -120,7 +92,7 @@ class Player:
             for moved_character in game.characters:
                 if moved_character.position == charact.position and charact != moved_character:
                     available_positions = self.get_adjacent_positions(charact, game)
-                    possible_actions["choices"].append(available_positions)
+                    possible_actions = available_positions
 
         # purple character
         if charact.color == "purple":
@@ -128,7 +100,7 @@ class Player:
 
             # the socket can not take an object
             available_colors = [q.color for q in available_characters]
-            possible_actions["choices"].append(available_colors)
+            possible_actions = available_colors
 
         # brown character
         if charact.color == "brown":
@@ -141,32 +113,29 @@ class Player:
             # the socket can not take an object
             available_colors = [q.color for q in available_characters]
             if len(available_colors) > 0:
-                possible_actions["choices"].append(available_colors)
+                possible_actions = available_colors
             else:
                 return None
 
         # grey character
         if charact.color == "grey":
             available_rooms = [room for room in range(10) if room is not game.shadow]
-            possible_actions["choices"].append(available_rooms)
+            possible_actions = available_rooms
 
         # blue character
         if charact.color == "blue":
 
             # choose room
             available_rooms = [room for room in range(10)]
-            possible_actions["choices"].append(available_rooms)
             passages_connections = {}
             for selected_room in available_rooms:
                 passages_work = passages[selected_room].copy()
                 passages_connections[selected_room] = passages_work
-            possible_actions["choices"].append(passages_connections)
+            possible_actions = passages_connections
 
         return possible_actions
 
-
-
-    def activate_power(self, charact, game, activables, game_state, chosen_actions):
+    def activate_power(self, charact, game, activables, chosen_actions):
         """
             Use the special power of the character.
         """
@@ -316,6 +285,41 @@ class Player:
             else:
                 # if the power was not used
                 return None
+
+    def get_possible_moves(self, charact, game):
+        """
+            Select a new position for the character.
+        """
+
+        # get the number of characters in the same room
+        characters_in_room = [
+            q for q in game.characters if q.position == charact.position]
+        number_of_characters_in_room = len(characters_in_room)
+
+        # get the available rooms from a given position
+        available_rooms = list()
+        available_rooms.append(self.get_adjacent_positions(charact, game))
+        for step in range(1, number_of_characters_in_room):
+            # build rooms that are a distance equal to step+1
+            next_rooms = list()
+            for room in available_rooms[step-1]:
+                next_rooms += self.get_adjacent_positions_from_position(room,
+                                                                        charact,
+                                                                        game)
+            available_rooms.append(next_rooms)
+
+        # flatten the obtained list
+        temp = list()
+        for sublist in available_rooms:
+            for room in sublist:
+                temp.append(room)
+
+
+        # filter the list in order to keep an unique occurrence of each room
+        temp = set(temp)
+        available_positions = list(temp)
+        return available_positions
+
 
     def move(self, charact, moved_character, blocked, game_state, game, selected_index):
         """

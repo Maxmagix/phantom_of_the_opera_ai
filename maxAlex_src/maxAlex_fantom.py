@@ -4,7 +4,7 @@ import os
 import random
 import socket
 from logging.handlers import RotatingFileHandler
-import Character
+from Tree import Tree
 
 import protocol
 
@@ -61,8 +61,9 @@ class Player():
         # work
         data = question["data"]
         game_state = question["game state"]
-        print(game_state)
-        response_index = random.randint(0, len(data)-1)
+        num_tour = game_state["num_tour"]
+        response_index = random.randint(0, len(data)-1)        
+        minmax_tree = Tree(None, data, game_state, turn_order[num_tour % 2], ["select_color"], None)
         # log
         fantom_logger.debug("|\n|")
         fantom_logger.debug("fantom answers")

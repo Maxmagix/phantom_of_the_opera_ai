@@ -1,17 +1,12 @@
 import json
 from random import shuffle, randrange, choice
-from typing import List, Set, Union, Tuple
+from typing import Dict, List, Set, Union, Tuple
 
-from src.Character import Character
-from src.Player import Player
-from src.globals import logger, passages, colors
-
+from localgame.character import Character
+from localgame.player import Player
+from localgame.globals import passages, colors
 
 class Game:
-    """
-        Class representing a full game until either the inspector
-        of the fantom wins.
-    """
     players: List[Player]
     position_carlotta: int
     exit: int
@@ -26,9 +21,10 @@ class Game:
 
     # Todo: def __init__ should be __init__(self, player_1: Player, player_2:
     #  Player)
-    def __init__(self, players: List[Player]):
+    
+    def __init__(self):
         # Todo: Should be self.players: Tuple[Player] = (player_1, player_2)
-        self.players = players
+        self.players = [Player(0), Player(1)]
         self.position_carlotta = 6  # position on the exit path
         # Todo: Should be removed and make the game ends when carlotta reach 0.
         self.exit = 22
@@ -42,17 +38,9 @@ class Game:
         self.alibi_cards = self.character_cards.copy()
         self.fantom = choice(self.alibi_cards)
         # Todo: Should be placed in a logger section of the __init__()
-        logger.info("the fantom is " + self.fantom.color)
         self.alibi_cards.remove(self.fantom)
         self.alibi_cards.extend(['fantom'] * 3)
 
-        # log
-        logger.info("\n=======\nnew game\n=======")
-        # Todo: 1 Should be removed
-        logger.info(f"shuffle {len(self.character_cards)} character_cards")
-        # Todo: 2 Should be removed
-        logger.info(f"shuffle {len(self.alibi_cards)} alibi cards")
-        # work
         # Todo: 1 Should be removed
         shuffle(self.character_cards)
         # Todo: 2 Should be removed
@@ -91,7 +79,6 @@ class Game:
                 elif blue_character_position == 8:
                     self.blocked = (4, 8)
                 else:
-                    print(blue_character_position)
                     raise ValueError("Wrong initial position of blue character")
 
 
@@ -117,8 +104,43 @@ class Game:
             "active character_cards": self.active_cards_display,
         }
 
+    def get_character_from_color(self, color, list_of_chars):
+        for charact in list_of_chars:
+            if (type(charact) == dict):
+                if charact["color"] == color:
+                    return charact
+            elif charact.color == color:
+                return charact
+        return None
+
+    def update_characters_obj(self, characters_dict):
+        for chara in self.characters:
+            chara.update(self.get_character_from_color(chara.color, characters_dict))
+
     def set_game_state(self, game_state):
-        print(game_state)
+        self.position_carlotta = game_state["position_carlotta"]
+        self.exit = game_state["exit"]
+        self.num_tour = game_state["num_tour"]
+        self.shadow = game_state["shadow"]
+        self.blocked = game_state["blocked"]
+        self.update_characters_obj(game_state["characters"])
+        self.character_cards = game_state["character_cards"]
+        if ("active character_cards" in game_state.keys()):
+            self.active_cards = game_state["active character_cards"]
+        #self.fantom = game_state["fantom"]
+
+    def get_game_state(self):
+        new_game_state = {}
+        new_game_state["position_carlotta"] = self.position_carlotta 
+        new_game_state["exit"] = self.exit
+        new_game_state["num_tour"] = self.num_tour
+        new_game_state["shadow"] = self.shadow
+        new_game_state["blocked"] = self.blocked
+        new_game_state["characters"] = self.characters
+        new_game_state["character_cards"] = self.character_cards
+        new_game_state["active characters_cards"] = self.active_cards
+        #new_game_state["fantom"] = self.fantom
+        return new_game_state
 
     def actions(self):
         """
@@ -132,8 +154,6 @@ class Game:
         """
         first_player_in_phase = (self.num_tour + 1) % 2
         if first_player_in_phase == 0:
-            logger.info(
-                f"-\nshuffle {len(self.character_cards)} character_cards\n-")
             shuffle(self.character_cards)
             self.active_cards = self.character_cards[:4]
         else:
@@ -152,14 +172,12 @@ class Game:
             {p for p in self.characters if p.position == i} for i in range(10)]
         if len(partition[self.fantom.position]) == 1 \
                 or self.fantom.position == self.shadow:
-            logger.info("The fantom screams.")
             self.position_carlotta += 1
             for room, chars in enumerate(partition):
                 if len(chars) > 1 and room != self.shadow:
                     for p in chars:
                         p.suspect = False
         else:
-            logger.info("the fantom does not scream.")
             for room, chars in enumerate(partition):
                 if len(chars) == 1 or room == self.shadow:
                     for p in chars:
@@ -168,11 +186,6 @@ class Game:
             [p for p in self.characters if p.suspect])
 
     def tour(self):
-        # log
-        logger.info("\n------------------")
-        logger.info(self)
-        logger.debug(json.dumps(self.update_game_state(""), indent=4))
-
         # work
         self.actions()
         self.fantom_scream()
@@ -187,21 +200,12 @@ class Game:
         """
         # work
         while self.position_carlotta < self.exit and len(
-                [p for p in self.characters if p.suspect]) > 1:
+            [p for p in self.characters if p.suspect]) > 1:
             self.tour()
         # game ends
-        if self.position_carlotta < self.exit:
-            logger.info(
-                "----------\n---- inspector wins : fantom is " + str(
-                    self.fantom))
-        else:
-            logger.info("----------\n---- fantom wins")
+        # if self.position_carlotta < self.exit:
+        # else:
         # log
-        logger.info(
-            f"---- final position of Carlotta : {self.position_carlotta}")
-        logger.info(f"---- exit : {self.exit}")
-        logger.info(
-            f"---- final score : {self.exit - self.position_carlotta}\n----------")
         return self.exit - self.position_carlotta
 
     def __repr__(self):
@@ -217,12 +221,12 @@ class Game:
             representation of the global state of the game.
         """
         self.characters_display = [character.display() for character in
-                                   self.characters]
+            self.characters]
         # Todo: should be removed
         self.character_cards_display = [tile.display() for tile in
-                                        self.character_cards]
+            self.character_cards]
         self.active_cards_display = [tile.display() for tile in
-                                     self.active_cards]
+            self.active_cards]
         # update
 
         self.game_state = {
