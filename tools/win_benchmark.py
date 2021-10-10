@@ -48,7 +48,6 @@ class ServerThread(threading.Thread):
 
 	def run(self):
 		pr = startServer()
-
 		self.resQueue.put(play())
 		endServer(pr)
 
@@ -59,6 +58,8 @@ def runWinBench(comFan, comInsp, nbGames):
 
 	bar = LoadingBar(nbGames)
 
+	firstLoop = True
+
 	for i in range(nbGames):
 		serverThread = ServerThread(q)
 		inspThread = SubprocessThread(comInsp)
@@ -66,10 +67,15 @@ def runWinBench(comFan, comInsp, nbGames):
 
 		serverThread.start()
 
-		time.sleep(0.5) # Leaves time for the server to start up
+		# Leaves time for the server to start up
+		if firstLoop:
+			time.sleep(0.5) # First loop takes more time
+			firstLoop = False
+		else:
+			time.sleep(0.1)
 
 		inspThread.start()
-		time.sleep(0.2) # Inspector must connect first
+		time.sleep(0.1) # Inspector must connect first
 		fantomThread.start()
 
 		serverThread.join()

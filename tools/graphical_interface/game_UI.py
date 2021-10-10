@@ -9,7 +9,7 @@ import tkinter
 import tkinter.filedialog
 
 dirname = os.path.dirname(__file__)
-resources_folder = os.path.join(dirname, "..", "ressources")
+resources_folder = os.path.join(dirname, "ressources")
 characters_folder = os.path.join(resources_folder, "Characters")
 opera_background = os.path.join(resources_folder, "opera_bck.jpg")
 game_background = os.path.join(resources_folder, "backgroundOpera.png")
