@@ -54,16 +54,20 @@ def get_adjacent_positions_from_position(game_state, position, color):
 def get_power_available_args(game_state, play):
     color = play[0]
     if color == "purple":
-        available_characters_idx = [i for (i, c) in enumerate(game_state["characters"]) if c["color"] != "purple"]
-        return available_characters_idx
+        available_characters = [c for c in game_state["characters"] if
+                                c["color"] != "purple"]
+
+        available_colors = [c["color"] for c in available_characters]
+        return available_colors
     elif color == "grey":
         return [room for room in range(10) if room is not game_state["shadow"]]
     elif color == "brown":
         char = get_char_from_color(game_state, color)
-        available_characters_idx = [i for (i, c) in enumerate(game_state["characters"]) if
+        available_characters = [c for c in game_state["characters"] if
                                 char["position"] == c["position"] if
                                 c["color"] != "brown"]
-        return available_characters_idx
+        available_colors = [c["color"] for c in available_characters]
+        return available_colors
     elif color == "blue":
         available_rooms = [room for room in range(10)]
         args = set() # Using a set to remove redundant choices
@@ -99,12 +103,19 @@ def add_power(game_state, plays, char_set):
             new_plays.append(play)
             continue
         elif play[0] == "white":
-            # Optimization: not point in using the power if there are no characters in the room
+            # Optimization: no point in using the power if there are no characters in the room
             nb_chars_room = len([c for c in game_state["characters"] if c["position"] == play[1]])
             if nb_chars_room == 0:
                 new_plays.append(play + [0])
                 continue
-
+        elif play[0] == "brown":
+            char = get_char_from_color(game_state, "brown")
+            available_characters = [c for c in game_state["characters"] if
+                                    char["position"] == c["position"] if
+                                    c["color"] != "brown"]
+            if len(available_characters) == 0:
+                new_plays.append(play + [0])
+                continue
         for x in [0, 1]:
             new_plays.append(play + [x])
 
@@ -209,11 +220,14 @@ def get_all_possible_plays(question):
 
     return plays
 
-
 if __name__ == "__main__":
-    f = open('test_game_state.json', 'r')
+    f = open('test_game_state3.json', 'r')
     content = f.read()
     question = json.loads(content)
+
+    # print(json.dumps(question["data"], indent=2))
+    # choice = copy.deepcopy(question["data"][2])
+    # print(question["data"].index(choice))
 
     plays = get_all_possible_plays(question)
 
