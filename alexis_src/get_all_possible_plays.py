@@ -81,7 +81,7 @@ def get_power_available_args(game_state, play):
                     args.add((exit, entrance))
         return list(args)
     elif color == "white":
-        char = get_char_from_color(game_state, color)
+        char = get_char_from_color(game_state, color).copy()
         char["position"] = play[1]
         args = []
         for moved_character in game_state["characters"]:
